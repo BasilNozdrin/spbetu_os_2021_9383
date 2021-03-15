@@ -195,12 +195,12 @@ greater_0:
     push ax
     mov di, offset SYSTEM_VER
     call BYTE_TO_DEC
-    mov ax, ds:si
+    lodsw
     mov [di+13], ah
     pop ax
     xchg ah, al
     call BYTE_TO_DEC
-    mov ax, ds:si
+    lodsw
     mov [di+15], ah
     mov dx, offset SYSTEM_VER
     call PRINT_BUF
