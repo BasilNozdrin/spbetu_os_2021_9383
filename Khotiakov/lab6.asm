@@ -1,249 +1,151 @@
-STACK segment stack
-	dw 128 dup(?)
-STACK ends
+MY_STACK SEGMENT STACK
+	DW 64 DUP(?)
+MY_STACK ENDS
 
-DATA segment
-	program db 'lab2.com', 0
-	block_parameters dw 0
-					dd 0
-					dd 0
-					dd 0
-	mem_flag db 0
-	cmd db 1h, 0dh
-	pos db 128 dup(0)
-	keep_ss dw 0
-	keep_sp dw 0
-	keep_psp dw 0
+DATA SEGMENT
+	params_block dw 0
+                dd 0
+                dd 0
+                dd 0
 
-  ERROR_CRASH db 'Error! MCB crashed!', 0dh, 0ah, '$'
-  ERROR_ADDRESS db 'Error! Invalid memory address!', 0dh, 0ah, '$'
-	NO_MEMORY db 'Error! Not enough memory!', 0dh, 0ah, '$'
-  NO_FILE db 'Error! File not found!', 0dh, 0ah, '$'
-	ERROR_FUNCTION_NUMBER db 'Error! Invalid function number', 0dh, 0ah, '$'
-	ERROR_DISK db 'Error! Disk error!', 0dh, 0ah, '$'
-	ERROR_MEMORY db 'Error! Insufficient memory', 0dh, 0ah, '$'
-	ERROR_ENV db 'Error! Wrong string of environment ', 0dh, 0ah, '$'
-	WRONG_FORM db 'Error! Wrong format', 0dh, 0ah, '$'
-	ERROR_DEFICE db 0dh, 0ah, 'Program ended by device error' , 0dh, 0ah, '$'
-	FREE_MEMORY db 'Memory has been freed' , 0dh, 0ah, '$'
-	END_CODE db 0dh, 0ah, 'Program ended with code    ' , 0dh, 0ah, '$'
-	END_CTRL db 0dh, 0ah, 'Program ended by CTRL-break' , 0dh, 0ah, '$'
-	END_31 db 0dh, 0ah, 'Program was ended by int 31h' , 0dh, 0ah, '$'
-	END_DATA db 0
-DATA ends
+    file_name db "LAB2.COM", 0
+    SAVED_PSP dw 0
+    SAVED_SP dw 0
+    SAVED_SS dw 0
 
-CODE segment
+    new_command_line db 1h,0DH
+    path_ db 128 dup(0)
 
-ASSUME cs:CODE, ds:DATA, ss:STACK
+    FREE_MEM_SUCСESS db "Memory is free ", 0DH, 0AH, '$'
+    CONTROL_BLOCK_ERROR db "Control block was destroyed ", 0DH, 0AH, '$'
+    FUNCTION_MEM_ERROR db "Not enough memory for function ", 0DH, 0AH, '$'
+    WRONG_ADDRESS db "Wrong address for block of memory", 0DH, 0AH, '$'
 
-PRINT proc
- 	push ax
- 	mov ah, 09h
- 	int 21h
- 	pop ax
- 	ret
-PRINT endp
+    WRONG_NUMBER_ERROR db "Wrong function number ", 0DH, 0AH, '$'
+    CANT_FIND_ERROR db "Can not find file ", 0DH, 0AH, '$'
+    DISK_ERROR db "Erorror on disk ", 0DH, 0AH, '$'
+    MEMORY_ERROR db "Not enough memory ", 0DH, 0AH, '$'
+    WRONG_STRING_ERROR db "Wrong environment string ", 0DH, 0AH, '$'
+    WRONG_FORMAT_ERROR db "Wrong format ", 0DH, 0AH, '$'
 
-MEM_FREE proc
+    NORMAL_END db 0DH, 0AH, "End code is:  ", 0DH, 0AH, '$'
+    BREAK_END db 0DH, 0AH, "End by ctrl+break ", 0DH, 0AH, '$'
+    ERROR_END db 0DH, 0AH, "End by device error ", 0DH, 0AH, '$'
+    FUNCTION_END db 0DH, 0AH, "End by function 31h", 0DH, 0AH, '$'
+
+    ERR_FLAG db 0
+
+    DATA_END db 0
+DATA ENDS
+
+CODE SEGMENT
+   ASSUME CS:CODE, DS:DATA, SS:MY_STACK
+
+WRITE_STRING proc near
+    push ax
+    mov ah, 9h
+    int 21h
+    pop ax
+    ret
+WRITE_STRING endp
+
+FREE_MEM PROC near
+    push ax
+    push bx
+    push dx
+    push cx
+    
+    mov ax, offset DATA_END
+    mov bx, offset PROC_END
+    add bx, ax
+    mov cl, 4
+    shr bx, cl
+    add bx, 2bh
+
+    mov ah, 4ah
+    int 21h
+
+    jnc FMS
+    mov ERR_FLAG, 1
+
+    cmp ax, 7
+    je CBE
+    cmp ax, 8
+    je FME
+    cmp ax, 9
+    je WA
+
+CBE:
+    mov dx, offset CONTROL_BLOCK_ERROR
+    call WRITE_STRING
+    jmp FREE_MEM_END
+FME:
+    mov dx, offset FUNCTION_MEM_ERROR
+    call WRITE_STRING
+    jmp FREE_MEM_END
+WA:
+    mov dx, offset WRONG_ADDRESS
+    call WRITE_STRING
+    jmp FREE_MEM_END
+FMS:
+    mov dx, offset FREE_MEM_SUCСESS
+    call WRITE_STRING
+    
+FREE_MEM_END:
+    pop dx
+    pop bx
+    pop cx
+    pop ax
+    ret
+FREE_MEM ENDP
+
+PATH PROC 
 	push ax
 	push bx
-	push cx
-	push dx
-
-	mov ax, offset END_DATA
-	mov bx, offset FIN
-	add bx, ax
-
-	mov cl, 4
-	shr bx, cl
-	add bx, 2bh
-	mov ah, 4ah
-	int 21h
-
-	jnc FINISH_MEM_FREE
-	mov mem_flag, 1
-
-CRASH_MCB:
-	cmp ax, 7
-	jne NOT_MEMORY
-	mov dx, offset ERROR_CRASH
-	call PRINT
-	jmp RET_FUN
-NOT_MEMORY:
-	cmp ax, 8
-	jne ADDRESS_ERROR
-	mov dx, offset NO_MEMORY
-	call PRINT
-	jmp RET_FUN
-ADDRESS_ERROR:
-	cmp ax, 9
-	mov dx, offset ERROR_ADDRESS
-	call PRINT
-	jmp RET_FUN
-FINISH_MEM_FREE:
-	mov mem_flag, 1
-	mov dx, offset FREE_MEMORY
-	call PRINT
-
-RET_FUN:
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	ret
-MEM_FREE endp
-
-LOAD proc
-	push ax
-	push bx
-	push cx
-	push dx
-	push ds
-	push es
-	mov keep_sp, sp
-	mov keep_ss, ss
-
-	mov ax, DATA
-	mov es, ax
-	mov bx, offset block_parameters
-	mov dx, offset cmd
-	mov [bx+2], dx
-	mov [bx+4], ds
-	mov dx, offset pos
-
-	mov ax, 4b00h
-	int 21h
-
-	mov ss, keep_ss
-	mov sp, keep_sp
-	pop es
-	pop ds
-
-	jnc loads
-
-	cmp ax, 1
-	jne FILE_ERROR
-	mov dx, offset ERROR_FUNCTION_NUMBER
-	call PRINT
-	jmp load_end
-FILE_ERROR:
-	cmp ax, 2
-	jne DISK_ERROR
-	mov dx, offset NO_FILE
-	call PRINT
-	jmp load_end
-DISK_ERROR:
-	cmp ax, 5
-	jne MEM_ERROR
-	mov dx, offset ERROR_DISK
-	call PRINT
-	jmp load_end
-MEM_ERROR:
-	cmp ax, 8
-	jne ENV_ERROR
-	mov dx, offset ERROR_MEMORY
-	call PRINT
-	jmp load_end
-ENV_ERROR:
-	cmp ax, 10
-	jne FORMAT_ERROR
-	mov dx, offset ERROR_ENV
-	call PRINT
-	jmp load_end
-FORMAT_ERROR:
-	cmp ax, 11
-	mov dx, offset WRONG_FORM
-	call PRINT
-	jmp load_end
-
-loads:
-	mov ah, 4dh
-	mov al, 00h
-	int 21h
-
-	cmp ah, 0
-	jne CTRL_FUNC
-	push di
-	mov di, offset END_CODE
-	mov [di+26], al
-	pop si
-	mov dx, offset END_CODE
-	call PRINT
-	jmp load_end
-CTRL_FUNC:
-	cmp ah, 1
-	jne DEVICE
-	mov dx, offset END_CTRL
-	call PRINT
-	jmp load_end
-DEVICE:
-	cmp ah, 2
-	jne INT_31
-	mov dx, offset ERROR_DEFICE
-	call PRINT
-	jmp load_end
-INT_31:
-	cmp ah, 3
-	mov dx, offset END_31
-	call PRINT
-
-load_end:
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	ret
-load endp
-
-PATH proc
-	push ax
-	push bx
-	push cx
+	push cx 
 	push dx
 	push di
 	push si
 	push es
-
-	mov ax, keep_psp
+	
+	mov ax, SAVED_PSP
 	mov es, ax
 	mov es, es:[2ch]
 	mov bx, 0
-
-LOOKING_PATH:
+	
+find_path:
 	inc bx
 	cmp byte ptr es:[bx-1], 0
-	jne LOOKING_PATH
-
-	cmp byte ptr es:[bx+1], 0
-	jne LOOKING_PATH
-
+	jne find_path
+	cmp byte ptr es:[bx+1], 0 
+	jne find_path	
 	add bx, 2
 	mov di, 0
-
-FIND_LOOP:
+	
+find_loop:
 	mov dl, es:[bx]
-	mov byte ptr [pos+di], dl
+	mov byte ptr [path_ + di], dl
 	inc di
 	inc bx
 	cmp dl, 0
-	je QUIT_LOOP
+	je end_find_loop
 	cmp dl, '\'
-	jne FIND_LOOP
+	jne find_loop
 	mov cx, di
-	jmp FIND_LOOP
+	jmp find_loop
 
-QUIT_LOOP:
+end_find_loop:
 	mov di, cx
 	mov si, 0
-
-END_FN:
-	mov dl, byte ptr [program+si]
-	mov byte ptr [pos+di], dl
-	inc di
+	
+end_f:
+	mov dl, byte ptr [file_name + si]
+	mov byte ptr [path_ + di], dl
+	inc di 
 	inc si
-	cmp dl, 0
-	jne END_FN
-
+	cmp dl, 0 
+	jne end_f
+		
 	pop es
 	pop si
 	pop di
@@ -251,28 +153,133 @@ END_FN:
 	pop cx
 	pop bx
 	pop ax
+
 	ret
-PATH endp
+PATH ENDP
 
-BEGIN proc far
+LOAD PROC
+    push ax
+	push bx
+	push cx
+	push dx
 	push ds
-	xor ax, ax
-	push ax
+	push es
+	
+	mov SAVED_SP, sp
+	mov SAVED_SS, ss	
 	mov ax, DATA
-	mov ds, ax
-	mov keep_psp, es
-	call MEM_FREE
-	cmp mem_flag, 0
-	je QUIT
-	call PATH
-	call LOAD
-QUIT:
-	xor al, al
-	mov ah, 4ch
-	int 21h
+	mov es, ax
+    mov bx, offset params_block
+	mov dx, offset new_command_line
+	mov [bx+2], dx
+	mov [bx+4], ds 
+	mov dx, offset path_
+	mov ax, 4b00h
+	int 21h 
+	
+	mov ss, SAVED_SS
+	mov sp, SAVED_SP
+	pop es
+	pop ds
 
-BEGIN   endp
+    jnc LOAD_SUCCESS
+    cmp ax, 1
+    je E_1
+    cmp ax, 2
+    je E_2
+    cmp ax, 5
+    je E_5
+    cmp ax, 8
+    je E_8
+    cmp ax, 10
+    je E_10
+    cmp ax, 11
+    je E_11
+E_1:
+    mov dx, offset WRONG_NUMBER_ERROR
+    call WRITE_STRING
+    jmp LOAD_END
+E_2:
+    mov dx, offset CANT_FIND_ERROR
+    call WRITE_STRING
+    jmp LOAD_END
+E_5:
+    mov dx, offset DISK_ERROR
+    call WRITE_STRING
+    jmp LOAD_END
+E_8:
+    mov dx, offset MEMORY_ERROR
+    call WRITE_STRING
+    jmp LOAD_END
+E_10:
+    mov dx, offset WRONG_STRING_ERROR
+    call WRITE_STRING
+    jmp LOAD_END
+E_11:
+    mov dx, offset WRONG_FORMAT_ERROR
+    call WRITE_STRING
+    jmp LOAD_END
 
-FIN:
+LOAD_SUCCESS:
+    mov ax, 4d00h
+    int 21h
+
+    cmp ah, 0
+    jmp NEND
+    cmp ah, 1
+    jmp BEND
+    cmp ah, 2
+    jmp EEND
+    cmp ah, 3
+    jmp FEND
+NEND:
+    mov di, offset NORMAL_END
+    add di, 15
+    mov [di], al
+    mov dx, offset NORMAL_END
+    call WRITE_STRING
+    jmp LOAD_END
+
+BEND:
+    mov dx, offset BREAK_END
+    call WRITE_STRING
+    jmp LOAD_END
+EEND:
+    mov dx, offset ERROR_END
+    call WRITE_STRING
+    jmp LOAD_END
+FEND:
+    mov dx, offset FUNCTION_END
+    call WRITE_STRING
+
+LOAD_END:
+    pop si
+	pop di
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+    ret
+LOAD ENDP
+
+MAIN PROC far
+    push dx
+    push ax
+    mov ax, DATA
+    mov ds, ax
+
+    call FREE_MEM
+    cmp ERR_FLAG, 1
+    je MAIN_END
+    call PATH
+    call LOAD
+
+MAIN_END:
+    xor al, al
+    mov ah, 4ch
+    int 21h
+
+PROC_END:
+MAIN endp
 CODE ends
-end BEGIN
+END Main
