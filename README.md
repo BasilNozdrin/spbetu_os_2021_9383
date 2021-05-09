@@ -27,7 +27,7 @@
 | 21   | Самулевич    | vasilysamulevich         |       |       |       |       |       |       |       |
 | 22   | Сергиенкова  | AnastasiaSergiencova2305 |       |       |       |       |       |       |       |
 | 23   | Соседков     | sosedkov-kirill          |       |       |       |       |       |       |       |
-| 24   | Хотяков      | Hotiakov                 | 09.05 |       |       |       |       |       |       |
+| 24   | Хотяков      | Hotiakov                 | 09.05 | 10.05 |       |       |       |       |       |
 | 25   | Храпова      |                          |       |       |       |       |       |       |       |
 | 26   | Чебесова     | chebesovairina           |       |       |       |       |       |       |       |
 | 27   | Чумак        | Machumak00               |       |       |       |       |       |       |       |
