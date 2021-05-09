@@ -22,6 +22,6 @@ git remote add sosedkov-kirill                https://github.com/sosedkov-kirill
 git remote add KonstantinMosin                https://github.com/KonstantinMosin/spbetu_os_2021_9383.git          # Мосин
 git remote add NastyaLihashva                 https://github.com/NastyaLihashva/spbetu_os_2021_9383.git
 git remote add dmnistratov                    https://github.com/dmnistratov/spbetu_os_2021_9383.git
-#git remote add                                https://github.com//spbetu_os_2021_9383.git
+git remote add zipzap666                      https://github.com/zipzap666/spbetu_os_2021_9383.git
 #git remote add                                https://github.com//spbetu_os_2021_9383.git
 #git remote add                                https://github.com//spbetu_os_2021_9383.git
