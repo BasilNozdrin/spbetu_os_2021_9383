@@ -14,7 +14,7 @@
 | 8    | Крейсманн    | kirill-1103              | 05.05 |       |       |       |       |       |       |
 | 9    | Лапина       | Anastasialapina          |       |       |       |       |       |       |       |
 | 10   | Лихашва      | NastyaLihashva           | 18.02 |       |       |       |       |       |       |
-| 11   | Лысова       | AlexandraLysova          |       |       |       |       |       |       |       |
+| 11   | Лысова       | AlexandraLysova          | 10.05 |       |       |       |       |       |       |
 | 12   | Моисейченко  | Kirill-Mois              |       |       |       |       |       |       |       |
 | 13   | Мосин        | KonstantinMosin          |       |       |       |       |       |       |       |
 | 14   | Никифоров    |                          |       |       |       |       |       |       |       |
