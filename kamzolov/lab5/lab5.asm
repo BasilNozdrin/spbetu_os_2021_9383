@@ -31,21 +31,23 @@ ROUT proc far
     KEEP_SS DW 0
 	KEEP_SP DW 0
 	KEEP_AX DW 0
+    STANDART_INT DB 0
     ROUT_INDEX dw 1337h
     TIMER_COUNTER db 'Timer: 0000$'
     BStack DW 64 DUP(?)
 start_proc:
     mov KEEP_SP, sp
     mov KEEP_AX, ax
+    mov ax, ss
     mov KEEP_SS, ss
+    mov STANDART_INT, 0h
+
+    mov sp, offset start_proc
 
     mov ax, seg BStack
     mov ss, ax
-    mov ax, offset start_proc
-    mov sp, ax
 
     mov ax, KEEP_AX
-
 
     push ax
     push bx
@@ -60,16 +62,22 @@ start_proc:
 	mov cx, es:[0017h]
 
     and cx, 0100b
-    jz standart_interruption
+    jz set_flag
+    jmp continue
 
+set_flag:
+    mov STANDART_INT, 1h
+    jmp restore_registers
+
+continue:
     in al, 60h
     cmp al, 1Eh
     je do_req
 
-standart_interruption:
-    call dword ptr cs:[KEEP_IP]
+    mov STANDART_INT, 1h
     jmp restore_registers
 do_req:
+
     in al, 61h
     mov ah, al
     or al, 80h
@@ -110,6 +118,11 @@ restore_registers:
     mov al, 20H
     out 20H, al
 
+    cmp STANDART_INT, 1h
+    jne iret_int
+
+    jmp dword ptr cs:[KEEP_IP]
+iret_int:
     iret
 end_rout:
 ROUT endp
