@@ -1,6 +1,6 @@
 
 ASTACK  segment stack
- dw  256 dup(0)
+ dw  128 dup(0)
 ASTACK  ends
 
 DATA segment
@@ -20,7 +20,7 @@ MY_INTERRUPTION PROC FAR
 
 int_data:
     key_value db 0
-    new_stack dw 256 dup(0)
+    new_stack dw 128 dup(0)
     signature dw 646h
     keep_ip dw 0
     keep_cs dw 0
@@ -36,7 +36,7 @@ start_iterrupt:
     mov ax, seg new_stack
     mov ss, ax
     mov ax, offset new_stack
-    add ax, 256
+    add ax, 64
     mov sp, ax
 
     push ax
