@@ -6,8 +6,8 @@ DATA SEGMENT
     dta_buffer db 43 DUP(0)
 
     overlay_addr dd 0
-    overlay_name1 db 'overlay1.com', 0h
-    overlay_name2 db 'overlay2.com', 0h
+    overlay_name1 db 'overlay1.ovl', 0h
+    overlay_name2 db 'overlay2.ovl', 0h
     overlay_path db 128 DUP(0)
 
     keep_ss dw 0
