@@ -1,283 +1,293 @@
 AStack segment stack
-	DW 128 dup(?)
+	DW 128 DUP(?)
 AStack ENDS
 
 DATA SEGMENT
-	parameter_block DW 0
-			DD 0
-			DD 0
-			DD 0
-	program DB 'lb2.com', 0	
-	mem_flag DB 0
-	cmd_l DB 1h, 0Dh
-	cl_pos DB 128 dup(0)
-	keep_ss DW 0
-	keep_sp DW 0
-	keep_psp DW 0
 
-	str_mcb_crash_err DB 'err: mcb crashed', 0dh, 0ah, '$' 
-	str_no_mem_err DB 'err: there is not enough memory to execute this function', 0dh, 0ah, '$' 
-	str_addr_err DB 'err: invalid memory address', 0dh, 0ah, '$'
-	str_free_mem DB 'memory has been freed' , 0dh, 0ah, '$'
+	BLOCK DW 0
+			DD 0
+			DD 0
+			DD 0
 
-	str_fn_err DB 'err: invalid function number', 0dh, 0ah, '$' 
-	str_file_error DB 'err: file not found', 0dh, 0ah, '$' 
-	str_disk_err DB 'err: disk error', 0dh, 0ah, '$' 
-	str_memory_error DB 'err: insufficient memory', 0dh, 0ah, '$' 
-	str_envs_err DB 'err: wrong string of environment ', 0dh, 0ah, '$' 
-	str_format_err DB 'err: wrong format', 0dh, 0ah, '$' 
+	SOURCE DB 'lb2.com', 0	
+	MEMORY_FLAG DB 0
+	CMD_L DB 1h, 0Dh
+	CL_POSITION DB 128 dup(0)
+	KEEP_SS DW 0
+	KEEP_SP DW 0
+	PSP DW 0
+
+	CRASH_ERROR DB 'ERROR: mcb crashed', 0dh, 0AH, '$' 
+	NO_MEMORY_ERROR DB 'ERROR: there is not enough memory to execute this function', 0dh, 0AH, '$' 
+	ADDRESS_ERROR DB 'ERROR: invalid memory address', 0dh, 0AH, '$'
+	FREE_MEMORY DB 'Memory has been successfully freed' , 0dh, 0AH, '$'
+
+	FUNCTION_NUMBER_ERROR DB 'ERROR: invalid function number', 0dh, 0AH, '$' 
+	FILE_ERROR DB 'ERROR: file not found', 0Dh, 0Ah, '$' 
+	DISK_ERROR DB 'ERROR: disk ERROR', 0dh, 0AH, '$' 
+	MEMORY_ERROR DB 'ERROR: insufficient memory', 0dh, 0AH, '$' 
+	ENV_ERROR DB 'ERROR: wrong string of environment ', 0dh, 0AH, '$' 
+	FORMAT_ERROR DB 'ERROR: wrong format', 0dh, 0AH, '$' 
 	
-	str_norm_fin DB 0dh, 0ah, 'program ended with code    ' , 0dh, 0ah, '$'
-	str_ctrl_end DB 0dh, 0ah, 'program ended by ctrl-break' , 0dh, 0ah, '$'
-	str_device_err DB 0dh, 0ah, 'program ended by device error' , 0dh, 0ah, '$'
-	str_int_end DB 0dh, 0ah, 'program ended by int 31h' , 0dh, 0ah, '$'
+	STANDART_END DB 0dh, 0AH, 'Program ended with code    ' , 0dh, 0AH, '$'
+	CTRL_END DB 0dh, 0AH, 'Program ended by ctrl-break' , 0dh, 0AH, '$'
+	DEVICE_ERROR DB 0dh, 0AH, 'Program ended by device ERROR' , 0dh, 0AH, '$'
+	INTERRUPT_END DB 0dh, 0AH, 'Program ended by int 31h' , 0dh, 0AH, '$'
 
-	end_data DB 0
+	END_DATA DB 0
 DATA ENDS
 
 CODE SEGMENT
 
 ASSUME CS:CODE, DS:DATA, SS:AStack
 
-print_str PROC 
- 	push ax
- 	mov ah, 09h
+PRINT_STR PROC 
+ 	push AX
+ 	mov AH, 09h
  	int 21h 
- 	pop ax
+ 	pop AX
  	ret
-print_str ENDP 
+PRINT_STR ENDP 
 
-free_memory proc 
-	push ax
-	push bx
-	push cx
-	push dx
+FREE_MEMORY_FUNCTION PROC 
+	push AX
+	push BX
+	push CX
+	push DX
 	
-	mov ax, offset end_data
-	mov bx, offset eeend
-	aDD bx, ax
+	mov AX, offset END_DATA
+	mov BX, offset ending
+	add BX, AX
 	
-	mov cl, 4
-	shr bx, cl
-	aDD bx, 2bh
-	mov ah, 4ah
+	mov CL, 4
+	shr BX, CL
+	add BX, 2Bh
+	mov AH, 4Ah
 	int 21h 
 
-	jnc _endf
-	mov mem_flag, 1
+	jnc end_free
+	mov MEMORY_FLAG, 1
 	
 mcb_crash:
-	cmp ax, 7
+	cmp AX, 7
 	jne not_enought_memory
-	mov dx, offset str_mcb_crash_err
-	call print_str
-	jmp freee	
-not_enought_memory:
-	cmp ax, 8
-	jne addr
-	mov dx, offset str_no_mem_err
-	call print_str
-	jmp freee	
-addr:
-	cmp ax, 9
-	mov dx, offset str_addr_err
-	call print_str
-	jmp freee
-_endf:
-	mov mem_flag, 1
-	mov dx, offset str_free_mem
-	call print_str
-	
-freee:
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	ret
-free_memory endp
+	mov DX, offset CRASH_ERROR
+	call PRINT_STR
+	jmp free	
 
-load proc 
-	push ax
-	push bx
-	push cx
-	push dx
-	push ds
-	push es
-	mov keep_sp, sp
-	mov keep_ss, ss
+not_enought_memory:
+	cmp AX, 8
+	jne addr
+	mov DX, offset NO_MEMORY_ERROR
+	call PRINT_STR
+	jmp free	
+
+addr:
+	cmp AX, 9
+	mov DX, offset ADDRESS_ERROR
+	call PRINT_STR
+	jmp free
+
+end_free:
+	mov MEMORY_FLAG, 1
+	mov DX, offset FREE_MEMORY
+	call PRINT_STR
 	
-	mov ax, data
-	mov es, ax
-	mov bx, offset parameter_block
-	mov dx, offset cmd_l
-	mov [bx+2], dx
-	mov [bx+4], ds 
-	mov dx, offset cl_pos
+free:
+	pop DX
+	pop CX
+	pop BX
+	pop AX
+	ret
+FREE_MEMORY_FUNCTION ENDP
+
+LOAD PROC 
+	push AX
+	push BX
+	push CX
+	push DX
+	push DS
+	push ES
+	mov KEEP_SP, SP
+	mov KEEP_SS, SS
+	mov AX, data
+	mov ES, AX
+	mov BX, offset BLOCK
+	mov DX, offset CMD_L
+	mov [BX+2], DX
+	mov [BX+4], DS 
+	mov DX, offset CL_POSITION
 	
-	mov ax, 4b00h 
+	mov AX, 4b00h 
 	int 21h 
 	
-	mov ss, keep_ss
-	mov sp, keep_sp
-	pop es
-	pop ds
+	mov SS, KEEP_SS
+	mov SP, KEEP_SP
+	pop ES
+	pop DS
 	
 	jnc loads
 	
-fn_err:
-	cmp ax, 1
-	jne file_err
-	mov dx, offset str_fn_err
-	call print_str
+	cmp AX, 1
+	jne _FILE_ERROR
+	mov DX, offset FUNCTION_NUMBER_ERROR
+	call PRINT_STR
 	jmp load_end
-file_err:
-	cmp ax, 2
-	jne disk_err
-	mov dx, offset str_file_error
-	call print_str
+
+_FILE_ERROR:
+	cmp AX, 2
+	jne _DISK_ERROR
+	mov DX, offset FILE_ERROR
+	call PRINT_STR
 	jmp load_end
-disk_err:
-	cmp ax, 5
-	jne mem_err
-	mov dx, offset str_disk_err
-	call print_str
+
+_DISK_ERROR:
+	cmp AX, 5
+	jne _MEMORY_ERROR
+	mov DX, offset DISK_ERROR
+	call PRINT_STR
 	jmp load_end
-mem_err:
-	cmp ax, 8
-	jne envs_err
-	mov dx, offset str_memory_error
-	call print_str
+
+_MEMORY_ERROR:
+	cmp AX, 8
+	jne _ENV_ERROR
+	mov DX, offset MEMORY_ERROR
+	call PRINT_STR
 	jmp load_end
-envs_err:
-	cmp ax, 10
-	jne format_err
-	mov dx, offset str_envs_err
-	call print_str
+
+_ENV_ERROR:
+	cmp AX, 10
+	jne _FORMAT_ERROR
+	mov DX, offset ENV_ERROR
+	call PRINT_STR
 	jmp load_end
-format_err:
-	cmp ax, 11
-	mov dx, offset str_format_err
-	call print_str
+
+_FORMAT_ERROR:
+	cmp AX, 11
+	mov DX, offset FORMAT_ERROR
+	call PRINT_STR
 	jmp load_end
 
 loads:
-	mov ah, 4dh
-	mov al, 00h
+	mov AH, 4Dh
+	mov AL, 00h
 	int 21h 
 	
 _nend:
-	cmp ah, 0
+	cmp AH, 0
 	jne ctrlc
-	push di 
-	mov di, offset str_norm_fin
-	mov [di+26], al 
-	pop si
-	mov dx, offset str_norm_fin
-	call print_str 
+	push DI 
+	mov DI, offset STANDART_END
+	mov [DI+26], AL 
+	pop SI
+	mov DX, offset STANDART_END
+	call PRINT_STR 
 	jmp load_end
+
 ctrlc:
-	cmp ah, 1
+	cmp AH, 1
 	jne device
-	mov dx, offset str_ctrl_end 
-	call print_str 
+	mov DX, offset CTRL_END 
+	call PRINT_STR 
 	jmp load_end
+
 device:
-	cmp ah, 2 
+	cmp AH, 2 
 	jne int_31h
-	mov dx, offset str_device_err
-	call print_str 
+	mov DX, offset DEVICE_ERROR
+	call PRINT_STR 
 	jmp load_end
+
 int_31h:
-	cmp ah, 3
-	mov dx, offset str_int_end
-	call print_str 
+	cmp AH, 3
+	mov DX, offset INTERRUPT_END
+	call PRINT_STR 
 
 load_end:
-	pop dx
-	pop cx
-	pop bx
-	pop ax
+	pop DX
+	pop CX
+	pop BX
+	pop AX
 	ret
-load endp
+LOAD ENDP
 
-path proc 
-	push ax
-	push bx
-	push cx 
-	push dx
-	push di
-	push si
-	push es
+PATH PROC 
+	push AX
+	push BX
+	push CX 
+	push DX
+	push DI
+	push SI
+	push ES
 	
-	mov ax, keep_psp
-	mov es, ax
-	mov es, es:[2ch]
-	mov bx, 0
+	mov AX, PSP
+	mov ES, AX
+	mov ES, ES:[2ch]
+	mov BX, 0
 	
 findz:
-	inc bx
-	cmp byte ptr es:[bx-1], 0
+	inc BX
+	cmp byte ptr ES:[BX-1], 0
 	jne findz
-
-	cmp byte ptr es:[bx+1], 0 
+	cmp byte ptr ES:[BX+1], 0 
 	jne findz
 	
-	aDD bx, 2
-	mov di, 0
+	add BX, 2
+	mov DI, 0
 	
 _loop:
-	mov dl, es:[bx]
-	mov byte ptr [cl_pos+di], dl
-	inc di
-	inc bx
+	mov dl, ES:[BX]
+	mov byte ptr [CL_POSITION+DI], dl
+	inc DI
+	inc BX
 	cmp dl, 0
-	je _end_loop
+	je end_loop 
 	cmp dl, '\'
 	jne _loop
-	mov cx, di
+	mov CX, DI
 	jmp _loop
-_end_loop:
-	mov di, cx
-	mov si, 0
+end_loop:
+	mov DI, CX
+	mov SI, 0
 	
 _fn:
-	mov dl, byte ptr [program+si]
-	mov byte ptr [cl_pos+di], dl
-	inc di 
-	inc si
+	mov dl, byte ptr [SOURCE + SI]
+	mov byte ptr [CL_POSITION+DI], dl
+	inc DI 
+	inc SI
 	cmp dl, 0 
 	jne _fn
 		
 	
-	pop es
-	pop si
-	pop di
-	pop dx
-	pop cx
-	pop bx
-	pop ax
+	pop ES
+	pop SI
+	pop DI
+	pop DX
+	pop CX
+	pop BX
+	pop AX
 	ret
-path endp
+PATH ENDP
 
-MAIN PROC far
-	push ds
-	xor ax, ax
-	push ax
-	mov ax, data
-	mov ds, ax
-	mov keep_psp, es
-	call free_memory 
-	cmp mem_flag, 0
+MAIN PROC FAR
+	push DS
+	xor AX, AX
+	push AX
+	mov AX, DATA
+	mov DS, AX
+	mov PSP, ES
+	call FREE_MEMORY_FUNCTION 
+	cmp MEMORY_FLAG, 0
 	je _end
-	call path
-	call load
+	call PATH
+	call LOAD
 _end:
-	xor al, al
-	mov ah, 4ch
+	xor AL, AL
+	mov AH, 4Ch
 	int 21h
 	
-MAIN      ENDP
+ending:
 
-eeend:
+MAIN      ENDP
 CODE ENDS
 END MAIN
