@@ -1,15 +1,3 @@
-ASTACK SEGMENT STACK
-   DW 200 DUP(?)
-ASTACK ENDS
-
-DATA SEGMENT
-    interruption_already_loaded_string db 'Interruption is already loaded', 0DH, 0AH, '$'
-    interruption_loaded_successfully_string db 'Interruption is loaded successfully', 0DH, 0AH, '$'
-    interruption_not_loaded_string db 'Interruption is not loaded', 0DH, 0AH, '$'
-    interruption_restored_string db 'Interruption is restored', 0DH, 0AH, '$'
-    test_string db 'test', 0DH, 0AH, '$'
-DATA ENDS
-
 CODE SEGMENT
     ASSUME CS:CODE, DS:DATA, SS:ASTACK
 
@@ -116,8 +104,6 @@ CODE SEGMENT
         mov ax, ss
         mov int_keep_ss, ax
 
-        mov ax, int_keep_ax
-
         mov sp, OFFSET start
         mov ax, seg IntStack
         mov ss, ax
@@ -194,7 +180,6 @@ CODE SEGMENT
         pop cx ;восстановление регистра
         pop ax ;восстановление регистра
 
-        mov int_keep_ax, ax
         mov sp, int_keep_sp
         mov ax, int_keep_ss
         mov ss, ax
@@ -412,5 +397,17 @@ CODE SEGMENT
 
 
 CODE ENDS
+
+ASTACK SEGMENT STACK
+   DW 200 DUP(?)
+ASTACK ENDS
+
+DATA SEGMENT
+    interruption_already_loaded_string db 'Interruption is already loaded', 0DH, 0AH, '$'
+    interruption_loaded_successfully_string db 'Interruption is loaded successfully', 0DH, 0AH, '$'
+    interruption_not_loaded_string db 'Interruption is not loaded', 0DH, 0AH, '$'
+    interruption_restored_string db 'Interruption is restored', 0DH, 0AH, '$'
+    test_string db 'test', 0DH, 0AH, '$'
+DATA ENDS
 
 END MAIN
