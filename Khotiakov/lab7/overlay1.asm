@@ -8,10 +8,10 @@ MAIN proc far
 
     mov ax, cs
     mov ds, ax
-    mov di, offset OVL_ADDRESS
-    add di, 21
+    mov di, offset OVERLAY_ADDRESS
+    add di, 20
     call WRD_TO_HEX
-    mov dx, offset OVL_ADDRESS
+    mov dx, offset OVERLAY_ADDRESS
     call WRITE_STRING
 
     pop di
@@ -21,7 +21,7 @@ MAIN proc far
     retf
 MAIN endp
 
-OVL_ADDRESS db "overlay1 address:    ", 0AH, 0DH, 0AH, '$'
+OVERLAY_ADDRESS db "overlay1 address:    ", 0DH, 0AH, '$'
 
 WRITE_STRING proc near
     push ax
@@ -57,7 +57,7 @@ BYTE_TO_HEX endp
 
 
 WRD_TO_HEX proc near
-    push	bx
+    push bx
     mov	bh,ah
     call byte_to_hex
     mov	[di],ah
