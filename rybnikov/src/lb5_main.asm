@@ -31,18 +31,21 @@ AStack    SEGMENT  STACK
     KEEP_SS DW 0
  	  KEEP_SP DW 0
  	  KEEP_AX DW 0
+    MY_INT DB 0
     ROUT_INDEX dw 6666h
     TIMER_COUNTER db 'Timer: 0000$'
     BStack DW 64 DUP(?)
  start1:
      mov KEEP_SP, sp
      mov KEEP_AX, ax
+     mov ax,ss
      mov KEEP_SS, ss
+
+     mov MY_INT, 0h
+     mov sp, offset start1
 
      mov ax, seg BStack
      mov ss, ax
-     mov ax, offset start1
-     mov sp, ax
 
      mov ax, KEEP_AX
 
@@ -62,16 +65,20 @@ AStack    SEGMENT  STACK
      mov ds, ax
 
      and cx, 0100b
-     jz defolt_int
+     jz check
+     jmp good
+
+check:
+      mov MY_INT, 1h
+      jmp re_reg
+good:
 
      in al, 60h
      cmp al, 1Eh
      je key
 
- defolt_int:
-     call dword ptr cs:[KEEP_IP]
+     mov MY_INT, 1h
      jmp re_reg
-
 
 
 
@@ -129,6 +136,10 @@ print_key:
      mov al, 20H
      out 20H, al
 
+     cmp MY_INT, 1h
+     jne iiret
+     jmp dword ptr cs:[KEEP_IP]
+iiret:
      iret
  end_rout:
  ROUT endp
