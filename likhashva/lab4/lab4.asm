@@ -14,10 +14,21 @@ INTERRUPT PROC far
 	PSP_ADDRESS_1 DW 0
 	KEEP_CS DW 0
 	KEEP_IP DW 0
+	KEEP_SP DW 0
+	KEEP_SS DW 0
+	KEEP_AX DW 0
 	INTERRUPT_SET DW 0FEDCh
 	INT_COUNT DB 'Interrupts call count: 0000  $'
+	BStack DW 64 DUP(?)
 
 START_FUNCTION:
+	mov KEEP_SP, sp
+	mov KEEP_AX, ax
+	mov KEEP_SS, ss
+	mov sp, offset START_FUNCTION
+	mov ax, seg BStack
+	mov ss, ax
+
 	push ax
 	push bx
 	push cx
@@ -102,6 +113,10 @@ END_CLC:
 	pop cx
 	pop bx
 	pop ax
+
+	mov ss, KEEP_SS
+	mov ax, KEEP_AX
+	mov sp, KEEP_SP
 
 	iret
 
