@@ -1,9 +1,15 @@
-dosseg
-.model small
-.stack 400h
+ASSUME CS:CODE,DS:DATA,SS:ASTACK
 
-.data
-    mstack dw 100h dup(?)
+ASTACK SEGMENT STACK
+    DW 64 DUP(?)
+ASTACK ENDS
+
+
+
+CODE SEGMENT
+
+DATA SEGMENT
+
     int_is_load dw ?
     cmd_line_flag dw 0
     str_is_not_load db "Interruption didn't load",0dh,0ah,'$'
@@ -11,8 +17,7 @@ dosseg
     str_unload   db "Interruption unloaded",0dh,0ah,'$'
     str_already_loaded db "Interruption is already loaded",0dh,0ah,'$'
 
-.code
-jmp m
+DATA ENDS
 
 WRITE_STR proc near
 		push ax
@@ -28,22 +33,19 @@ MY_INT PROC FAR
         _code dw 0abcdh
         keep_cs dw 0
         keep_ip dw 0
-        temp_ss dw 0
-        temp_sp dw 0
         PSP_0 dw 0
         PSP_1 dw 0
+        temp_ss dw 0
+        temp_sp dw 0
         str_count db "Call count:  0000                                                                                          "
-
+        mstack dw 100h dup(?)
 process:
-        cli
         mov temp_ss,ss
         mov temp_sp,sp
         mov ax,seg mstack
         mov ss,ax
-        mov ax,offset mstack
-        add ax,100H
+        mov ax,offset PROCESS
         mov sp,ax
-        sti 
 
         push ax
         push bx
@@ -56,8 +58,10 @@ process:
 
         push dx
 
+        push di
+        push cx
         push ds
-        mov ax,seg MY_INT
+        mov ax,seg str_count
         mov ds,ax
         mov di,offset str_count
         add di,16
@@ -75,9 +79,14 @@ process:
         loop for
 
     output:
-        push es
+        pop ds
+        pop cx
+        pop di
 
-        mov ax,ds
+        push es
+        push bp
+
+        mov ax,seg str_count
         mov es,ax
         mov bx,offset str_count
         mov bp,bx
@@ -89,8 +98,8 @@ process:
         mov cx,80;конец строки
         int 10h;вывод строки по адресу es:bp
         
+        pop bp
         pop es
-        pop ds
 
 
         pop dx
@@ -103,11 +112,10 @@ process:
         pop bx
         pop ax
 
-        cli
         mov ax,temp_ss
         mov ss,ax
         mov sp,temp_sp
-        sti
+
         iret
 MY_INT ENDP
 
@@ -155,12 +163,12 @@ UNLOAD PROC NEAR
     call write_str
 
     push es
-    mov cx,es:[bx+13]
+    mov cx,es:[bx+9]
     mov es,cx
     mov ah,49h
     int 21h
     pop es
-    mov cx,es:[bx+15]
+    mov cx,es:[bx+11]
     mov es,cx
     int 21h
 
@@ -173,6 +181,11 @@ metka2:
 UNLOAD ENDP
 
 LOAD PROC NEAR
+        push ax
+        push bx
+        push cx
+        push dx
+
         mov ah,35h
         mov al,1ch
         int 21h
@@ -187,6 +200,11 @@ LOAD PROC NEAR
         mov al,1ch
         int 21h
         pop ds
+
+        pop dx
+        pop cx
+        pop bx
+        pop ax
         
 ret
 LOAD endp
@@ -228,7 +246,7 @@ m:
     mov psp_1,ax
 
 
-    mov ax,@data
+    mov ax,data
     mov ds,ax
 
     call CHECK_CMD_LINE
@@ -260,4 +278,7 @@ exit:
         mov ah,4ch
         int 21h
 MAIN ENDP
-end
+CODE ENDS
+
+
+END MAIN
