@@ -136,7 +136,7 @@ IS_INTERRUPT_SET PROC near
 	mov al, 1Ch ;номер вектора
 	int 21h
 
-	mov dx, es:[bx + 11]
+	mov dx, es:[bx + 17]
 	cmp dx, 0FEDCh
 	je IS_INTER_SET
 	mov al, 00h
