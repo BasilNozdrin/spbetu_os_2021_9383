@@ -92,9 +92,9 @@ FMS:
     call WRITE_STRING
     
 FREE_MEM_END:
+    pop cx
     pop dx
     pop bx
-    pop cx
     pop ax
     ret
 FREE_MEM ENDP
@@ -156,6 +156,8 @@ end_f:
 
 	ret
 PATH ENDP
+
+
 
 LOAD PROC
     push ax
@@ -221,17 +223,18 @@ E_11:
     jmp LOAD_END
 
 LOAD_SUCCESS:
-    mov ax, 4d00h
+    mov ah, 4dh
+    mov al, 00h
     int 21h
 
     cmp ah, 0
-    jmp NEND
+    je NEND
     cmp ah, 1
-    jmp BEND
+    je BEND
     cmp ah, 2
-    jmp EEND
+    je EEND
     cmp ah, 3
-    jmp FEND
+    je FEND
 NEND:
     mov di, offset NORMAL_END
     add di, 15
@@ -253,8 +256,6 @@ FEND:
     call WRITE_STRING
 
 LOAD_END:
-    pop si
-	pop di
 	pop dx
 	pop cx
 	pop bx
@@ -267,6 +268,7 @@ MAIN PROC far
     push ax
     mov ax, DATA
     mov ds, ax
+    mov SAVED_PSP, es
 
     call FREE_MEM
     cmp ERR_FLAG, 1
