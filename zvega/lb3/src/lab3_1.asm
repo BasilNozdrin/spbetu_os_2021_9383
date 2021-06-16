@@ -1,0 +1,328 @@
+TESTPC  SEGMENT
+        ASSUME CS:TESTPC, DS:TESTPC, ES:NOTHING, SS:NOTHING
+org 100h
+
+start: jmp begin
+
+
+SC_OR_SD_MSG db " ", '$'
+RECORD_SIZE db "Size:         ", '$'
+ADDRESS db "Address:        ", '$'
+PSP_ADDRESS db "PSP:        ", '$'
+MCB_NUMBER db "     ", '$'
+DECIMAL_NUMBER db "   ", '$'
+EXTENDED_MEMORY_SIZE db "Extended memory size:        bytes", 0dh, 0ah, '$'
+AVAILABLE_MEM_SIZE db "Available memory size:        bytes", 0dh, 0ah, '$' 
+NEWLINE db 0dh, 0ah, '$'
+
+
+TETR_TO_HEX PROC near 
+            and AL,0Fh
+            cmp AL,09
+            jbe NEXT
+            add AL,07
+NEXT:   add AL,30h
+        ret
+TETR_TO_HEX ENDP
+
+
+BYTE_TO_HEX PROC near
+            push CX
+            mov AH,AL
+            call TETR_TO_HEX
+            xchg AL,AH
+            mov CL,4
+            shr AL,CL
+            call TETR_TO_HEX  
+            pop CX           
+            ret
+BYTE_TO_HEX ENDP
+
+
+WRD_TO_HEX PROC near
+        push BX
+        mov BH,AH
+        call BYTE_TO_HEX
+        mov [DI],AH
+        dec DI
+        mov [DI],AL
+        dec DI
+        mov AL,BH
+        call BYTE_TO_HEX
+        mov [DI],AH
+        dec DI
+        mov [DI],AL
+        pop BX
+        ret
+WRD_TO_HEX ENDP
+
+
+BYTE_TO_DEC PROC near
+        push CX
+        push DX
+        xor AH,AH
+        xor DX,DX
+        mov CX,10
+loop_bd: div CX
+        or DL,30h
+        mov [SI],DL
+        dec SI
+        xor DX,DX
+        cmp AX,10
+        jae loop_bd
+        cmp AL,00h
+        je end_l
+        or AL,30h
+        mov [SI],AL
+end_l: pop DX
+      pop CX
+      ret
+BYTE_TO_DEC ENDP
+
+
+PARAGRAPHS_TO_BYTES PROC
+    
+    push ax
+    push bx
+    push cx
+    push dx
+    push si
+   
+	mov bx, 10h
+	mul bx
+	mov bx, 0ah
+	xor cx, cx
+
+division:
+	div bx
+	push dx
+	inc cx
+	xor dx, dx
+	cmp ax, 0h
+	jnz division
+   
+write_symbol:
+	pop dx
+	or dl, 30h
+	mov [si], dl
+	inc si
+	loop write_symbol
+   
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+	ret
+
+PARAGRAPHS_TO_BYTES ENDP
+
+
+PRINT_NEWLINE proc near
+
+    push ax
+    push dx
+
+    mov dx, offset NEWLINE
+    mov ah, 9h
+    int 21h
+
+    pop dx
+    pop ax
+
+    ret
+
+PRINT_NEWLINE endp
+
+
+WRITE_STRING proc near
+    
+    push ax
+    mov ah, 9h
+    int 21h
+    pop ax
+
+    ret
+
+WRITE_STRING endp
+
+
+PRINT_AVAILABLE_MEM_SIZE proc near
+
+    push ax
+    push bx
+    push si
+
+    mov ah, 4ah
+    mov bx, 0ffffh
+    int 21h
+
+    mov ax, bx
+    mov si, offset AVAILABLE_MEM_SIZE
+    add si, 23
+    call PARAGRAPHS_TO_BYTES
+    
+    mov dx, offset AVAILABLE_MEM_SIZE
+    call WRITE_STRING
+
+    pop si
+    pop bx
+    pop ax
+
+    ret
+
+PRINT_AVAILABLE_MEM_SIZE endp
+
+
+PRINT_EXTENDED_MEM_SIZE proc near
+
+    push ax
+    push bx
+    push si
+
+    mov al, 30h
+    out 70h, al
+    in al, 71h
+
+    mov al, 31h
+    out 70h, al
+    in al, 71h
+    mov ah, al
+    
+    mov si, offset EXTENDED_MEMORY_SIZE
+    add si, 22
+    call PARAGRAPHS_TO_BYTES
+
+    mov dx, offset EXTENDED_MEMORY_SIZE
+    call WRITE_STRING
+
+    pop si
+    pop bx
+    pop ax
+    
+    ret
+
+PRINT_EXTENDED_MEM_SIZE endp
+
+
+PRINT_MCB_RECORD proc near
+
+    push ax
+    push dx
+    push si
+    push di
+    push cx
+
+    mov ax, es
+    mov di, offset ADDRESS
+    add di, 12
+    call WRD_TO_HEX
+    mov dx, offset ADDRESS
+    call WRITE_STRING
+
+    mov ax, es:[1]
+    mov di, offset PSP_ADDRESS
+    add di, 8
+    call WRD_TO_HEX
+    mov dx, offset PSP_ADDRESS
+    call WRITE_STRING
+
+    mov ax, es:[3]
+    mov si, offset RECORD_SIZE
+    add si, 6
+    call PARAGRAPHS_TO_BYTES
+    mov dx, offset RECORD_SIZE
+    call WRITE_STRING
+
+    mov bx, 8
+    mov dx, offset SC_OR_SD_MSG
+    call WRITE_STRING
+    mov cx, 7
+
+    print_scsd_loop:
+        mov dl, es:[bx]
+        mov ah, 02h
+        int 21h
+        inc bx
+        loop print_scsd_loop
+
+
+    pop cx
+    pop di
+    pop si
+    pop dx
+    pop ax
+
+    ret
+
+PRINT_MCB_RECORD endp
+
+
+OFFSET_DECIMAL_NUMBER proc near
+
+    offset_loop:
+        cmp byte ptr [si], ' '
+        jne exit_offset_decimal
+        inc si
+        jmp offset_loop
+
+exit_offset_decimal:
+    ret
+
+OFFSET_DECIMAL_NUMBER endp
+
+
+PRINT_MCB_TABLE proc near
+
+    push ax
+    push bx
+    push es
+    push dx
+
+    mov ah, 52h
+    int 21h
+    mov ax, es:[bx-2]
+    mov es, ax
+    mov cl, 1
+
+    print_mcb_info:
+
+        call PRINT_MCB_RECORD
+        call PRINT_NEWLINE
+
+        mov al, es:[0]
+        cmp al, 5ah
+        je exit
+
+        mov bx, es:[3]
+        mov ax, es
+        add ax, bx
+        inc ax
+        mov es, ax
+
+        inc cl
+        jmp print_mcb_info
+
+exit:
+    pop dx
+    pop es
+    pop bx
+    pop ax
+
+    ret
+
+PRINT_MCB_TABLE endp
+
+
+
+begin:
+    call PRINT_AVAILABLE_MEM_SIZE
+    call PRINT_EXTENDED_MEM_SIZE
+    call PRINT_MCB_TABLE
+
+    xor al, al
+    mov ah, 4ch
+    int 21h
+
+TESTPC  ENDS
+        END start
