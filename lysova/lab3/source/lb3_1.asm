@@ -2,7 +2,7 @@ CODE	SEGMENT
 	ASSUME CS:CODE, DS:CODE, ES:NOTHING, SS:NOTHING
 	ORG 100H
 START:
-	
+	jmp MAINflag
 	ENTER    db 0Dh, 0Ah, '$'
 	AVAILABLE_MEM   db 'Size of available memory: $'
 	EXPANDED_MEM   db 'Size of expanded memory: $'
@@ -153,8 +153,7 @@ loop_dec:
         
 PRINT_DEC	ENDP
 
-
-MAIN	PROC far
+MAINflag:
 ; available memory 
         mov     DX, OFFSET AVAILABLE_MEM
         call    PRINT_STRING
@@ -236,12 +235,10 @@ list:
         call    ENTR
         jmp     list
 
-end_main:    
-	mov     AX, 4C00h
+end_main: 
+	xor	AL, AL   
+	mov     AH, 4Ch
         int     21h
-        
-MAIN	ENDP
 
 CODE	ENDS
-	END	MAIN
-
+	END START

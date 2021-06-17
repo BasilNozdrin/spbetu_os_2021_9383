@@ -3,7 +3,7 @@ CODE	SEGMENT
 	begin = $
 	ORG 100H
 START:
-	
+	jmp MAINflag
 	ENTER    db 0Dh, 0Ah, '$'
 	AVAILABLE_MEM   db 'Size of available memory: $'
 	EXPANDED_MEM   db 'Size of expanded memory: $'
@@ -190,7 +190,7 @@ loop_dec:
 PRINT_DEC	ENDP
 
 
-MAIN	PROC far
+MAINflag:
 ; available memory 
         mov     DX, OFFSET AVAILABLE_MEM
         call    PRINT_STRING
@@ -279,10 +279,8 @@ list:
 end_main:    
 	mov     AX, 4C00h
         int     21h
-        
-MAIN	ENDP
 
 endproc = $
 
 CODE	ENDS
-	END	MAIN
+	END	START
