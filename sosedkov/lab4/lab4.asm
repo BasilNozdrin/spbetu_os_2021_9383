@@ -23,26 +23,26 @@ CODE segment
 CUSTOM_INTERRUPTION proc far
 	jmp start
 	
-	KEEP_CS dw 0
-	KEEP_IP dw 0
-	KEEP_PSP dw 0
-	KEEP_SS dw 0
-	KEEP_SP dw 0
-	KEEP_AX dw 0
+  	int_seg dw 256 dup(0)
+    int_sig dw 0ffffh
+    keep_ip dw 0
+    keep_cs dw 0
+    keep_psp dw 0
+    keep_ax dw 0
+    keep_ss dw 0
+    keep_sp dw 0
 	int_counter db 'interruption_counter: 0000$'
-	int_sig dw 9999h
-	int_seg dw 16 dup(?)
+
 
 start:
-	mov KEEP_SP,sp
-	mov KEEP_AX,ax
-	mov ax,ss
-	mov KEEP_SS,ax
-	
-	mov ax,KEEP_AX
-	mov sp,offset start
-	mov ax,seg int_seg
-	mov ss,ax
+	mov keep_ax, ax
+    mov keep_sp, sp
+    mov keep_ss, ss
+    mov ax, seg int_seg
+    mov ss, ax
+    mov ax, offset int_seg
+    add ax, 256
+    mov sp, ax
 	
 	push ax
 	push cx
@@ -113,9 +113,8 @@ update:
 	mov al,20h
 	out 20h,al
 	iret
-LAST:
 CUSTOM_INTERRUPTION endp
-
+LAST:
 
 
 
@@ -185,44 +184,57 @@ getCurs endp
 
 
 UNLOAD_CUSTOM_INTERRUPTION proc
-	cli
-	push ds
-	push es
-	
-	mov ah,35h
-	mov al,1ch
-	int 21h
-	
-	mov si,offset KEEP_IP
-	sub si,offset CUSTOM_INTERRUPTION
-	mov dx,es:[bx + si]
-	mov ax,es:[bx + si + 2]
-	mov ds,ax
-	
-	mov ah,25h
-	mov al,1ch
-	int 21h
-	
-	mov ax,es:[bx + si + 4]
-    mov es,ax
+    cli
+    
+    push ax
+    push bx
+    push dx
+    push ds
     push es
-	
-	mov ax,es:[2ch]
-    mov es,ax
-    mov ah,49h
+    push si
+
+    mov ah, 35h
+    mov al, 1ch
     int 21h
-	
-	pop es
-	mov ah,49h
-	int 21h
-	
-	pop es
-	pop ds
-	sti
-	
+    mov si, offset keep_ip
+    sub si, offset CUSTOM_INTERRUPTION
+    mov dx, es:[bx + si]
+    mov ax, es:[bx + si + 2]
+
+    push ds
+    mov ds, ax
+    mov ah, 25h
+    mov al, 1ch
+    int 21h
+    pop ds
+
+    mov ax, es:[bx + si + 4]
+    mov es, ax
+    push es
+    mov ax, es:[2ch]
+    mov es, ax
+    mov ah, 49h
+    int 21h
+    pop es
+    mov ah, 49h
+    int 21h
+
+    sti
+
+	push dx
 	mov dx,offset interruption_delete
 	call PRINT
-	ret
+	pop dx
+
+
+    pop si
+    pop es
+    pop ds
+    pop dx
+    pop bx
+    pop ax
+
+ret
 UNLOAD_CUSTOM_INTERRUPTION endp
 
 
@@ -241,6 +253,12 @@ PRINT endp
 
 
 CHECK_CMD proc far
+
+    push es
+	mov ax, keep_psp
+    mov es, ax
+
+	
     mov al, es:[81h+1]
 	cmp al, '/'
 	jne set_zero
@@ -260,6 +278,7 @@ set_zero:
     mov ax, 0h
 
 check_cmd_exit:
+	pop es
     ret
 CHECK_CMD endp
 
@@ -268,6 +287,9 @@ CHECK_CMD endp
 
 
 IS_LOADED proc far
+	push bx
+	push si
+
 	mov ah, 35h
 	mov al, 1ch
 	int 21h
@@ -284,6 +306,9 @@ not_loaded:
     mov ax, 0h
 
 is_loaded_exit:
+	pop si
+	pop bx
+
     ret
 IS_LOADED endp
 
@@ -292,7 +317,15 @@ IS_LOADED endp
 
 
 LOAD_CUSTOM_INTERRUPTION proc far
-	mov KEEP_PSP, es
+	push ax
+    push bx
+    push cx
+    push dx
+    push es
+    push ds
+
+
+
 	mov ah,35h
 	mov al,1ch
 	int 21h
@@ -300,12 +333,9 @@ LOAD_CUSTOM_INTERRUPTION proc far
 	mov KEEP_CS,es
 	mov KEEP_IP,bx
 	
-	push es
-	push bx
-	push ds
-	
-	lea dx,CUSTOM_INTERRUPTION
-	mov ax,seg CUSTOM_INTERRUPTION
+
+	mov dx, offset CUSTOM_INTERRUPTION
+	mov ax, seg CUSTOM_INTERRUPTION
 	mov ds,ax
 	
 	mov ah,25h
@@ -313,13 +343,11 @@ LOAD_CUSTOM_INTERRUPTION proc far
 	int 21h
 	
 	pop ds
-	pop bx
-	pop es
-	
+
 	mov dx,offset interruption_loaded
 	call PRINT
 	
-	lea dx,LAST
+	mov dx, offset LAST
 	mov cl,4h
 	shr dx,cl
 	inc dx
@@ -330,6 +358,12 @@ LOAD_CUSTOM_INTERRUPTION proc far
 	mov ah,31h
 	int 21h
 
+
+	pop es
+    pop dx
+    pop cx
+    pop bx
+    pop ax
 	ret
 LOAD_CUSTOM_INTERRUPTION endp
 
@@ -339,6 +373,8 @@ LOAD_CUSTOM_INTERRUPTION endp
 MAIN proc far
 	mov ax, DATA
 	mov ds, ax
+	mov KEEP_PSP, es
+
 
     push es
     call IS_LOADED
